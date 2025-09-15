@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Przewodnik po Ikonach Designu: Lampy Wiszące</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A single-page application with a header, interactive filter buttons for different eras (Bauhaus, 50s-60s, 70s, 80s), and a dynamic grid of cards displaying iconic lamps. This dashboard/gallery approach allows users to easily explore and compare designs without being overwhelmed. A footer provides actionable keywords and key manufacturers. This structure was chosen to transform a list of data into an engaging, explorable guide. -->
+    <!-- Visualization & Content Choices: The core information is a curated list of designers and lamps. Goal: Organize & Inform. Presentation: A responsive grid of content cards. Interaction: JS-powered filtering by era. This is more effective than a static list, allowing users to focus on specific periods of interest. Justification: Card-based layouts are intuitive and visually appealing for showcasing products/designs. No charts are needed, as the data is qualitative. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: #FDFBF8;
+            color: #333;
+        }
+        .filter-btn {
+            transition: all 0.3s ease;
+        }
+        .filter-btn.active {
+            background-color: #A37F64;
+            color: #FFFFFF;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            backface-visibility: hidden;
+            transform: translateZ(0);
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .dialog-box {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-[#A37F64] mb-2">Przewodnik po Ikonach Designu</h1>
+            <p class="text-lg text-gray-600">Twoja interaktywna baza inspiracji: lampy wiszące z XX wieku</p>
+        </header>
+
+        <nav id="filters" class="flex flex-wrap justify-center gap-2 md:gap-4 mb-12">
+            <button class="filter-btn active px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-100" data-filter="all">Wszystkie</button>
+            <button class="filter-btn px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-100" data-filter="bauhaus">Bauhaus i Modernizm</button>
+            <button class="filter-btn px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-100" data-filter="50s-60s">Lata 50. i 60.</button>
+            <button class="filter-btn px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-100" data-filter="70s">Lata 70.</button>
+            <button class="filter-btn px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-100" data-filter="80s">Lata 80.</button>
+        </nav>
+
+        <!-- New Gemini API features section -->
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-md border-t border-gray-200">
+            <h2 class="text-2xl font-bold text-[#A37F64] mb-4">Nowe funkcje ✨</h2>
+            <div class="flex flex-wrap gap-4 justify-center">
+                <button id="generate-inspiration-btn" class="px-6 py-3 bg-[#A37F64] text-white rounded-full font-semibold hover:bg-[#8e6c53] transition-colors duration-300">✨ Generuj inspiracje</button>
+            </div>
+        </section>
+
+        <main id="lamp-gallery" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <!-- Lamp cards will be injected here by JavaScript -->
+        </main>
+
+        <footer class="mt-20 pt-10 border-t border-gray-200">
+            <div class="grid md:grid-cols-2 gap-10">
+                <div>
+                    <h3 class="text-2xl font-bold text-[#A37F64] mb-4">Producenci do obserwowania</h3>
+                    <p class="text-gray-600 mb-4">Wielu z tych producentów wciąż produkuje oryginalne modele lub ich reedycje. Warto śledzić ich ofertę oraz aukcje z przedmiotami vintage.</p>
+                    <ul class="list-disc list-inside text-gray-700 space-y-1">
+                        <li>Louis Poulsen (Dania)</li>
+                        <li>Fog & Mørup (Dania, vintage)</li>
+                        <li>Lyfa (Dania, vintage)</li>
+                        <li>GUBI (Dania)</li>
+                        <li>&Tradition (Dania)</li>
+                        <li>Artek (Finlandia)</li>
+                        <li>Granhaga Metallindustri (Szwecja, vintage)</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-bold text-[#A37F64] mb-4">Słowa kluczowe do wyszukiwań</h3>
+                    <p class="text-gray-600 mb-4">Użyj tych fraz na forach, w wyszukiwarkach i na portalach aukcyjnych, aby znaleźć interesujące Cię lampy (zarówno w języku polskim, jak i angielskim).</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">Mid-Century Modern pendant</span>
+                        <span class="bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">Scandinavian pendant lamp</span>
+                        <span class="bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">Danish modern lighting</span>
+                        <span class="bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">lampa wisząca vintage</span>
+                        <span class="bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">duński design lampa</span>
+                        <span class="bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">skandynawski modernizm</span>
+                        <span class="bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">lampa z lat 60.</span>
+                        <span class="bg-gray-200 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">Bauhaus lamp</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Dialog Box for API responses -->
+    <div id="dialog-modal" class="dialog-overlay hidden">
+        <div class="dialog-box">
+            <button class="close-btn" id="close-modal-btn">&times;</button>
+            <h3 id="modal-title" class="text-2xl font-bold mb-4"></h3>
+            <p id="modal-content" class="text-gray-700"></p>
+            <div id="loading-indicator" class="flex justify-center items-center mt-4 hidden">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#A37F64]"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const lampsData = [
+            {
+                designer: "Poul Henningsen",
+                model: "PH 5 & PH Artichoke",
+                year: "1958",
+                era: "50s-60s",
+                description: "Ikony duńskiego designu, zaprojektowane dla Louis Poulsen. Charakteryzują się systemem kilku warstw abażurów (zwykle w jasnych, pastelowych kolorach), które rozpraszają światło, eliminując cień i odblaski. To mistrzostwo w kontroli światła.",
+                imageUrl: "https://placehold.co/400x300/EAE3D9/A37F64?text=PH+5"
+            },
+            {
+                designer: "Alvar Aalto",
+                model: "A331 'Beehive' (Ul)",
+                year: "1953",
+                era: "50s-60s",
+                description: "Fiński modernizm w najlepszym wydaniu. Lampa w kształcie ula, złożona z białych, metalowych pierścieni, przedzielonych cienkimi, polerowanymi mosiężnymi pierścieniami. Delikatne otwory w pierścieniach pozwalają na przebicie się światła, tworząc ciepły, nastrojowy blask.",
+                imageUrl: "https://placehold.co/400x300/EAE3D9/A37F64?text=A331+Beehive"
+            },
+            {
+                designer: "Verner Panton",
+                model: "FlowerPot",
+                year: "1968",
+                era: "50s-60s",
+                description: "Symbol epoki Flower Power. Prosta, geometryczna forma złożona z dwóch kulistych półkul skierowanych do siebie. Światło odbija się od wewnętrznej powierzchni, tworząc miękki, rozproszony strumień. Dostępna w wielu żywych kolorach.",
+                imageUrl: "https://placehold.co/400x300/EAE3D9/A37F64?text=FlowerPot"
+            },
+            {
+                designer: "Jo Hammerborg",
+                model: "Orient",
+                year: "1963",
+                era: "50s-60s",
+                description: "Zaprojektowana dla Fog & Mørup. Elegancki, organiczny klosz o kształcie łzy, wykonany z miedzi lub mosiądzu, z elementami drewna palisandrowego u góry. Miedziany abażur dodaje lampie ciepłego, luksusowego wyglądu.",
+                imageUrl: "https://placehold.co/400x300/EAE3D9/A37F64?text=Orient"
+            },
+            {
+                designer: "Hans-Agne Jakobsson",
+                model: "Seria T-372",
+                year: "lata 60.",
+                era: "50s-60s",
+                description: "Szwedzki mistrz pracy z fornirem sosnowym i mosiądzem. Lampa składa się z cienkich, drewnianych listew, które tworzą organiczny kształt, przypominający pąk kwiatu. Drewno filtruje światło, dając niezwykle ciepły, nastrojowy blask.",
+                imageUrl: "https://placehold.co/400x300/EAE3D9/A37F64?text=Jakobsson"
+            },
+            {
+                designer: "Carl Thore (Sigurd Lindkvist)",
+                model: "Trava",
+                year: "lata 60.",
+                era: "50s-60s",
+                description: "Szwedzki design dla Granhaga Metallindustri. Klosz składa się z kilku warstw perforowanego aluminium lub miedzi, które tworzą unikatowy, warstwowy wzór. Często wnętrze warstw jest malowane w jaskrawych kolorach, które są widoczne, gdy lampa świeci.",
+                imageUrl: "https://placehold.co/400x300/EAE3D9/A37F64?text=Trava"
+            },
+            {
+                designer: "Claus Bonderup & Torsten Thorup",
+                model: "Semi Pendant",
+                year: "1968",
+                era: "70s",
+                description: "Reakcja na organiczne formy lat 60. Klosz w kształcie stożka o ostrym, geometrycznym kształcie, często w lśniących, chromowanych lub emaliowanych kolorach. Lampa emituje bezpośrednie, skupione światło, idealne nad stół.",
+                imageUrl: "https://placehold.co/400x300/EAE3D9/A37F64?text=Semi+Pendant"
+            },
+            {
+                designer: "Verner Panton",
+                model: "VP Globe",
+                year: "1969",
+                era: "70s",
+                description: "Futurystyczna rzeźba świetlna. Duża, przezroczysta akrylowa kula z pięcioma zawieszonymi wewnątrz, kolorowymi reflektorami. To lampa, która jest dziełem sztuki i czystym przykładem stylu 'Space Age'.",
+                imageUrl: "https://placehold.co/400x300/EAE3D9/A37F64?text=VP+Globe"
+            },
+            {
+                designer: "Wilhelm Wagenfeld",
+                model: "Wagenfeld Pendant",
+                year: "1928",
+                era: "bauhaus",
+                description: "Ikona funkcjonalizmu. Prosty, półkulisty klosz z opalowego szkła, zawieszony na metalowej lince. Lampa jest czystym ucieleśnieniem zasad Bauhaus - prostota, funkcjonalność i minimalizm.",
+                imageUrl: "https://placehold.co/400x300/EAE3D9/A37F64?text=Wagenfeld"
+            },
+            {
+                designer: "Paavo Tynell",
+                model: "Seria 'Snowflake'",
+                year: "lata 40./50.",
+                era: "50s-60s",
+                description: "'Człowiek, który oświetlił Finlandię'. Jego projekty często naśladują naturę. Misterne, mosiężne konstrukcje przypominające płatki śniegu lub kwiaty. Klosze wykonane są z perforowanego mosiądzu lub miedzi, co tworzy unikalne wzory świetlne.",
+                imageUrl: "https://placehold.co/400x300/EAE3D9/A37F64?text=Snowflake"
+            },
+             {
+                designer: "Nieznany (często styl skandynawski)",
+                model: "Multi-layer / UFO",
+                year: "lata 70.",
+                era: "70s",
+                description: "Charakterystyczne dla lat 70. lampy warstwowe, często inspirowane projektami takimi jak 'Trava'. Klosz jest złożony z wielu warstw, które przypominają latający spodek. Daje to rozproszone, nieoślepiające światło. Często produkowane w jasnych kolorach, takich jak pomarańczowy, żółty, czy brązowy.",
+                imageUrl: "https://placehold.co/400x300/EAE3D9/A37F64?text=UFO+Lamp"
+            },
+            {
+                designer: "Inspiracje Memphis Group",
+                model: "Postmodernistyczne formy",
+                year: "lata 80.",
+                era: "80s",
+                description: "Chociaż styl Memphis narodził się we Włoszech, jego wpływ był globalny. Lampy z lat 80. to odważne kolory (często neonowe), geometryczne kształty, asymetria i mieszanie różnych materiałów. Często mają zabawny, ironiczny charakter, łamiąc zasady funkcjonalizmu.",
+                imageUrl: "https://placehold.co/400x300/EAE3D9/A37F64?text=Memphis+Style"
+            }
+        ];
+
+        const gallery = document.getElementById('lamp-gallery');
+        const filters = document.getElementById('filters');
+        const modal = document.getElementById('dialog-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalContent = document.getElementById('modal-content');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const generateInspirationBtn = document.getElementById('generate-inspiration-btn');
+
+        const renderLamps = (filter) => {
+            gallery.innerHTML = '';
+            const filteredLamps = filter === 'all' ? lampsData : lampsData.filter(lamp => lamp.era === filter);
+
+            filteredLamps.forEach(lamp => {
+                const card = document.createElement('div');
+                card.className = 'card bg-white rounded-lg shadow-md overflow-hidden';
+                card.innerHTML = `
+                    <img src="${lamp.imageUrl}" alt="${lamp.model} by ${lamp.designer}" class="w-full h-48 object-cover">
+                    <div class="p-5">
+                        <h2 class="text-xl font-bold text-gray-800">${lamp.model}</h2>
+                        <p class="text-sm font-semibold text-[#A37F64] mb-2">${lamp.designer} (${lamp.year})</p>
+                        <p class="text-gray-600 text-sm">${lamp.description}</p>
+                        <button class="ask-gemini-btn mt-4 px-4 py-2 bg-[#A37F64] text-white rounded-full text-xs font-semibold hover:bg-[#8e6c53] transition-colors duration-300" data-model="${lamp.model}" data-designer="${lamp.designer}">✨ Zapytaj o lampę</button>
+                    </div>
+                `;
+                gallery.appendChild(card);
+            });
+        };
+
+        filters.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                document.querySelector('.filter-btn.active').classList.remove('active');
+                e.target.classList.add('active');
+                renderLamps(e.target.dataset.filter);
+            }
+        });
+
+        // Event listener for the "Ask about lamp" buttons
+        gallery.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('ask-gemini-btn')) {
+                const model = e.target.dataset.model;
+                const designer = e.target.dataset.designer;
+                modalTitle.textContent = `Więcej o ${model}`;
+                modalContent.textContent = '';
+                showModal();
+                loadingIndicator.classList.remove('hidden');
+
+                const prompt = `Podaj szczegółową, historyczną, jednopunktową odpowiedź na temat lampy ${model} autorstwa ${designer}. Skoncentruj się na jej cechach projektowych i znaczeniu w historii designu. Odpowiedz w języku polskim.`;
+
+                try {
+                    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            systemInstruction: { parts: [{ text: "Jesteś ekspertem w dziedzinie historii designu i lamp." }] },
+                            tools: [{ "google_search": {} }],
+                        })
+                    });
+                    const result = await response.json();
+                    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Przepraszamy, nie udało się uzyskać informacji.";
+                    modalContent.textContent = text;
+                } catch (error) {
+                    console.error("Błąd API Gemini:", error);
+                    modalContent.textContent = "Przepraszamy, wystąpił błąd podczas pobierania informacji.";
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                }
+            }
+        });
+
+        // Event listener for the "Generate Inspiration" button
+        generateInspirationBtn.addEventListener('click', async () => {
+            modalTitle.textContent = 'Nowa inspiracja';
+            modalContent.textContent = '';
+            showModal();
+            loadingIndicator.classList.remove('hidden');
+
+            const activeEra = document.querySelector('.filter-btn.active').dataset.filter;
+            const eraName = {
+                'all': 'różne epoki designu',
+                'bauhaus': 'styl Bauhaus',
+                '50s-60s': 'lata 50. i 60.',
+                '70s': 'lata 70.',
+                '80s': 'lata 80.'
+            }[activeEra];
+
+            const prompt = `Opisz hipotetyczną, nową lampę wiszącą, która pasuje do ${eraName}. Opisz jej materiały, kształt i ogólny klimat designu. Nie twórz lampy, która istnieje, stwórz nową, oryginalną koncepcję. Odpowiedz w języku polskim, w jednym paragrafie.`;
+
+            try {
+                const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        systemInstruction: { parts: [{ text: "Jesteś ekspertem w dziedzinie historii designu i lamp." }] },
+                        tools: [{ "google_search": {} }],
+                    })
+                });
+                const result = await response.json();
+                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Przepraszamy, nie udało się wygenerować inspiracji.";
+                modalContent.textContent = text;
+            } catch (error) {
+                console.error("Błąd API Gemini:", error);
+                modalContent.textContent = "Przepraszamy, wystąpił błąd podczas generowania inspiracji.";
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                }
+            });
+
+        const showModal = () => modal.classList.remove('hidden');
+        const hideModal = () => modal.classList.add('hidden');
+        closeModalBtn.addEventListener('click', hideModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                hideModal();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderLamps('all');
+        });
+    </script>
+</body>
+</html>
